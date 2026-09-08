@@ -1,0 +1,204 @@
+[
+  {
+    "id": "step-001",
+    "requirement": "As a user, I want to add an item to my shopping list so that I can track things I need to buy.",
+    "test_cases": [
+      {
+        "title": "Add a new item with all fields populated",
+        "preconditions": [
+          "User is logged in with a valid account",
+          "At least one category already exists"
+        ],
+        "test_data": [
+          "Item name: 'Rice'",
+          "Brand: 'Caprice'",
+          "Unit price: 2000",
+          "Quantity: 1"
+        ],
+        "steps": [
+          {
+            "step_number": 1,
+            "action": "Navigate to an existing category and click \"+ Add item\"",
+            "expected_result": "An item creation form opens with empty fields"
+          },
+          {
+            "step_number": 2,
+            "action": "Enter the item name, brand, unit price, and quantity from the test data",
+            "expected_result": "Each field accepts and displays the entered value without error"
+          },
+          {
+            "step_number": 3,
+            "action": "Click \"Save item\"",
+            "expected_result": "The form closes and the new item appears in the category's item list"
+          },
+          {
+            "step_number": 4,
+            "action": "Verify the item row's displayed values",
+            "expected_result": "Name, brand, unit price, and calculated total price match the values entered in step 2"
+          }
+        ],
+        "postconditions": [
+          "The new item persists after refreshing the page"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "step-002",
+    "requirement": "As a user, I want to edit an existing item's price so that my spending totals stay accurate.",
+    "test_cases": [
+      {
+        "title": "Edit an item's unit price and confirm totals update",
+        "preconditions": [
+          "An item already exists with a known unit price and quantity"
+        ],
+        "test_data": [
+          "Original unit price: 300",
+          "New unit price: 500"
+        ],
+        "steps": [
+          {
+            "step_number": 1,
+            "action": "Locate the target item in its category's item list",
+            "expected_result": "The item's current unit price and total price are visible and match test data"
+          },
+          {
+            "step_number": 2,
+            "action": "Click the edit icon on the item's row",
+            "expected_result": "An edit form opens pre-populated with the item's current values"
+          },
+          {
+            "step_number": 3,
+            "action": "Clear the unit price field and enter the new value from test data",
+            "expected_result": "The field accepts the new numeric value"
+          },
+          {
+            "step_number": 4,
+            "action": "Click \"Save\"",
+            "expected_result": "The form closes and the item row reflects the new unit price"
+          },
+          {
+            "step_number": 5,
+            "action": "Verify the item's total price (unit price x quantity)",
+            "expected_result": "Total price recalculates correctly based on the new unit price"
+          }
+        ],
+        "postconditions": [
+          "The updated price persists after refreshing the page"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "step-003",
+    "requirement": "As a user, I want to delete an item from my list so that I can remove things I no longer need.",
+    "test_cases": [
+      {
+        "title": "Delete an item and confirm permanent removal",
+        "preconditions": [
+          "An item exists in a known category"
+        ],
+        "test_data": [],
+        "steps": [
+          {
+            "step_number": 1,
+            "action": "Locate the target item and click its delete icon",
+            "expected_result": "A confirmation prompt appears asking to confirm deletion"
+          },
+          {
+            "step_number": 2,
+            "action": "Click \"Delete\" to confirm",
+            "expected_result": "The confirmation closes and the item no longer appears in the list"
+          },
+          {
+            "step_number": 3,
+            "action": "Refresh the page",
+            "expected_result": "The deleted item does not reappear, confirming the deletion persisted"
+          }
+        ],
+        "postconditions": [
+          "Other items in the same category remain unaffected"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "step-004",
+    "requirement": "As a user, I want to log in with my email and password so that I can access my shopping lists.",
+    "test_cases": [
+      {
+        "title": "Log in successfully with valid credentials",
+        "preconditions": [
+          "A registered account exists with a known email and password"
+        ],
+        "test_data": [
+          "Email: registered test account email",
+          "Password: correct password for that account"
+        ],
+        "steps": [
+          {
+            "step_number": 1,
+            "action": "Navigate to the login page",
+            "expected_result": "Email and password fields are visible and empty"
+          },
+          {
+            "step_number": 2,
+            "action": "Enter the valid email and password from test data",
+            "expected_result": "Both fields accept the input; password is masked"
+          },
+          {
+            "step_number": 3,
+            "action": "Click \"Sign in\"",
+            "expected_result": "User is redirected to the dashboard within a few seconds"
+          },
+          {
+            "step_number": 4,
+            "action": "Verify the dashboard displays the logged-in user's data",
+            "expected_result": "Categories and items belonging to that account are shown, not another account's data"
+          }
+        ],
+        "postconditions": [
+          "Session remains active on subsequent navigation without re-prompting login"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "step-005",
+    "requirement": "As a user, I want to search my items so that I can quickly find something without scrolling.",
+    "test_cases": [
+      {
+        "title": "Search narrows the item list to matching results",
+        "preconditions": [
+          "A category contains at least 5 items with distinct names"
+        ],
+        "test_data": [
+          "Search term: a substring matching exactly one item's name"
+        ],
+        "steps": [
+          {
+            "step_number": 1,
+            "action": "Open the category containing the test items",
+            "expected_result": "All items in the category are listed"
+          },
+          {
+            "step_number": 2,
+            "action": "Type the search term into the search box",
+            "expected_result": "The list updates as text is entered, without requiring a page reload"
+          },
+          {
+            "step_number": 3,
+            "action": "Verify the filtered results",
+            "expected_result": "Only the item matching the search term is shown; all others are hidden"
+          },
+          {
+            "step_number": 4,
+            "action": "Clear the search box",
+            "expected_result": "The full original item list is restored"
+          }
+        ],
+        "postconditions": []
+      }
+    ]
+  }
+]

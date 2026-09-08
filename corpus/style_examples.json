@@ -1,0 +1,124 @@
+[
+  {
+    "id": "corpus-001",
+    "requirement": "As a user, I want to add an item to my shopping list so that I can track things I need to buy.",
+    "test_cases": [
+      {
+        "title": "Add item with all fields populated",
+        "steps": [
+          "Given I am logged in and viewing a category",
+          "When I click \"+ Add item\" and fill in name, brand, unit price, and quantity",
+          "And I click \"Save item\"",
+          "Then the new item appears in the item list with the values I entered"
+        ]
+      },
+      {
+        "title": "Add item with only the required name field",
+        "steps": [
+          "Given I am viewing a category",
+          "When I click \"+ Add item\" and fill in only the item name",
+          "And I click \"Save item\"",
+          "Then the item is saved successfully with default values for optional fields"
+        ]
+      },
+      {
+        "title": "Attempt to add an item with an empty name",
+        "steps": [
+          "Given I am viewing a category",
+          "When I click \"+ Add item\" and leave the name field blank",
+          "And I click \"Save item\"",
+          "Then I see a validation message and the item is not created"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "corpus-002",
+    "requirement": "As a user, I want to edit an existing item's price so that my spending totals stay accurate.",
+    "test_cases": [
+      {
+        "title": "Edit an item's unit price successfully",
+        "steps": [
+          "Given an item exists with a known unit price",
+          "When I open the item's edit form and change the unit price",
+          "And I click \"Save\"",
+          "Then the item row reflects the new unit price and updated total"
+        ]
+      },
+      {
+        "title": "Cancel an edit without saving",
+        "steps": [
+          "Given an item exists with a known unit price",
+          "When I open the item's edit form, change the price, and close without saving",
+          "Then the item retains its original price"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "corpus-003",
+    "requirement": "As a user, I want to delete an item from my list so that I can remove things I no longer need.",
+    "test_cases": [
+      {
+        "title": "Delete an item and confirm removal",
+        "steps": [
+          "Given an item exists in a category",
+          "When I click the delete icon on that item and confirm",
+          "Then the item no longer appears in the list"
+        ]
+      },
+      {
+        "title": "Cancel a delete action",
+        "steps": [
+          "Given an item exists in a category",
+          "When I click the delete icon but cancel the confirmation",
+          "Then the item is still present in the list"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "corpus-004",
+    "requirement": "As a user, I want to log in with my email and password so that I can access my shopping lists.",
+    "test_cases": [
+      {
+        "title": "Log in with valid credentials",
+        "steps": [
+          "Given I am on the login page",
+          "When I enter a valid email and password and click \"Sign in\"",
+          "Then I am redirected to my dashboard"
+        ]
+      },
+      {
+        "title": "Attempt login with an incorrect password",
+        "steps": [
+          "Given I am on the login page",
+          "When I enter a valid email with an incorrect password and click \"Sign in\"",
+          "Then I see an authentication error and remain on the login page"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "corpus-005",
+    "requirement": "As a user, I want to search my items so that I can quickly find something without scrolling.",
+    "test_cases": [
+      {
+        "title": "Search returns matching items",
+        "steps": [
+          "Given a category contains multiple items",
+          "When I type a partial item name into the search box",
+          "Then only items matching that text are shown"
+        ]
+      },
+      {
+        "title": "Search with no matching results",
+        "steps": [
+          "Given a category contains items",
+          "When I search for text that matches no item",
+          "Then I see an empty state message instead of a stale list"
+        ]
+      }
+    ]
+  }
+]

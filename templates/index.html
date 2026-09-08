@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Case Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      margin: 0;
+      background: #f7f5f2;
+      color: #2a2420;
+    }
+    header {
+      padding: 20px 32px;
+      background: #2a2420;
+      color: #fff;
+    }
+    header h1 { margin: 0; font-size: 20px; }
+    .layout {
+      display: flex;
+      gap: 24px;
+      padding: 24px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .panel {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .panel h2 { margin-top: 0; font-size: 16px; color: #6b5d4f; }
+    .jira-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { min-height: 160px; resize: vertical; }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #b5651d;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:hover { background: #9c5518; }
+    button.secondary { background: #6b5d4f; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .generate-btn { width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+    .style-row { display: flex; gap: 10px; margin-top: 16px; }
+    .style-option {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .style-option:has(input:checked) { border-color: #b5651d; background: #fdf3e7; }
+    .style-option input { margin-top: 3px; }
+    .style-option strong { display: block; font-size: 13px; }
+    .style-option span { display: block; color: #777; font-size: 11px; margin-top: 2px; }
+    .step-case {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .step-case h3 { margin: 0 0 10px; font-size: 14px; }
+    .step-case .section-label { font-size: 11px; text-transform: uppercase; color: #999; margin: 10px 0 4px; }
+    .step-case ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; }
+    .step-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+    .step-num { font-weight: bold; color: #b5651d; min-width: 20px; }
+    .step-content .action { color: #2a2420; }
+    .step-content .expected { color: #666; font-size: 12px; margin-top: 2px; }
+    .test-case {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .test-case h3 { margin: 0 0 8px; font-size: 14px; }
+    .test-case ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; }
+    .ambiguity-box {
+      background: #fdf3e7;
+      border: 1px solid #f0dcb8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 16px;
+    }
+    .ambiguity-box h3 { margin: 0 0 8px; font-size: 14px; color: #8a5a00; }
+    .ambiguity-box ul { margin: 0; padding-left: 18px; font-size: 13px; }
+    .meta { font-size: 12px; color: #999; margin-top: 16px; }
+    .copy-btn { margin-top: 12px; }
+    .empty-state { color: #999; font-size: 14px; text-align: center; padding: 40px 0; }
+    .error-box {
+      background: #fde8e8; border: 1px solid #f0b8b8; color: #8a0000;
+      padding: 12px; border-radius: 6px; font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header><h1>Test Case Generator</h1></header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Requirement</h2>
+      <div class="jira-row">
+        <input type="text" id="jiraKey" placeholder="Jira ticket key, e.g. PROJ-123" />
+        <button class="secondary" onclick="fetchJira()">Fetch from Jira</button>
+      </div>
+      <textarea id="requirement" placeholder="Paste a requirement here, or fetch one from Jira above..."></textarea>
+
+      <div class="style-row">
+        <label class="style-option">
+          <input type="radio" name="style" value="bdd" checked />
+          <div>
+            <strong>BDD (Given/When/Then)</strong>
+            <span>Quick validation during testing</span>
+          </div>
+        </label>
+        <label class="style-option">
+          <input type="radio" name="style" value="step_by_step" />
+          <div>
+            <strong>Step-by-Step / Multi-Stage</strong>
+            <span>Detailed, repeatable execution for complex processes</span>
+          </div>
+        </label>
+      </div>
+
+      <button class="generate-btn" onclick="generate()" id="generateBtn">Generate test cases</button>
+      <div id="fetchError"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Generated output</h2>
+      <div id="output">
+        <div class="empty-state">Test cases will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchJira() {
+      const key = document.getElementById('jiraKey').value.trim();
+      const errorDiv = document.getElementById('fetchError');
+      errorDiv.innerHTML = '';
+      if (!key) return;
+
+      try {
+        const res = await fetch(`/jira/${encodeURIComponent(key)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch ticket');
+        document.getElementById('requirement').value = data.requirement;
+      } catch (err) {
+        errorDiv.innerHTML = `<div class="error-box">${err.message}</div>`;
+      }
+    }
+
+    async function generate() {
+      const requirement = document.getElementById('requirement').value.trim();
+      const style = document.querySelector('input[name="style"]:checked').value;
+      const output = document.getElementById('output');
+      const btn = document.getElementById('generateBtn');
+
+      if (!requirement) {
+        output.innerHTML = '<div class="error-box">Enter a requirement first.</div>';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      output.innerHTML = '<div class="empty-state">Generating...</div>';
+
+      try {
+        const res = await fetch('/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requirement, style }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+        renderResult(data);
+      } catch (err) {
+        output.innerHTML = `<div class="error-box">${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate test cases';
+      }
+    }
+
+    function renderResult(data) {
+      const output = document.getElementById('output');
+      let html = '';
+
+      if (data.style === 'step_by_step') {
+        data.test_cases.forEach((tc) => {
+          html += `<div class="step-case"><h3>${escapeHtml(tc.title)}</h3>`;
+
+          if (tc.preconditions && tc.preconditions.length) {
+            html += '<div class="section-label">Preconditions</div><ul>';
+            tc.preconditions.forEach((p) => { html += `<li>${escapeHtml(p)}</li>`; });
+            html += '</ul>';
+          }
+          if (tc.test_data && tc.test_data.length) {
+            html += '<div class="section-label">Test data</div><ul>';
+            tc.test_data.forEach((d) => { html += `<li>${escapeHtml(d)}</li>`; });
+            html += '</ul>';
+          }
+
+          html += '<div class="section-label">Steps</div>';
+          tc.steps.forEach((step) => {
+            html += `<div class="step-row"><span class="step-num">${step.step_number}.</span>`;
+            html += `<div class="step-content"><div class="action">${escapeHtml(step.action)}</div>`;
+            html += `<div class="expected">Expected: ${escapeHtml(step.expected_result)}</div></div></div>`;
+          });
+
+          if (tc.postconditions && tc.postconditions.length) {
+            html += '<div class="section-label">Postconditions</div><ul>';
+            tc.postconditions.forEach((p) => { html += `<li>${escapeHtml(p)}</li>`; });
+            html += '</ul>';
+          }
+          html += '</div>';
+        });
+      } else {
+        data.test_cases.forEach((tc) => {
+          html += `<div class="test-case"><h3>${escapeHtml(tc.title)}</h3><ul>`;
+          tc.steps.forEach((step) => {
+            html += `<li>${escapeHtml(step)}</li>`;
+          });
+          html += '</ul></div>';
+        });
+      }
+
+      if (data.ambiguity_notes && data.ambiguity_notes.length > 0) {
+        html += '<div class="ambiguity-box"><h3>Ambiguity flags</h3><ul>';
+        data.ambiguity_notes.forEach((note) => {
+          html += `<li>${escapeHtml(note)}</li>`;
+        });
+        html += '</ul></div>';
+      }
+
+      html += `<div class="meta">Grounded in: ${data.retrieved_examples.join(', ')}</div>`;
+      html += `<button class="copy-btn secondary" onclick="copyOutput()">Copy as text</button>`;
+
+      output.innerHTML = html;
+      window._lastResult = data;
+    }
+
+    function copyOutput() {
+      const data = window._lastResult;
+      if (!data) return;
+
+      let text = '';
+
+      if (data.style === 'step_by_step') {
+        data.test_cases.forEach((tc) => {
+          text += `${tc.title}\n`;
+          if (tc.preconditions && tc.preconditions.length) {
+            text += 'Preconditions:\n';
+            tc.preconditions.forEach((p) => { text += `  - ${p}\n`; });
+          }
+          if (tc.test_data && tc.test_data.length) {
+            text += 'Test data:\n';
+            tc.test_data.forEach((d) => { text += `  - ${d}\n`; });
+          }
+          tc.steps.forEach((step) => {
+            text += `  ${step.step_number}. ${step.action}\n     Expected: ${step.expected_result}\n`;
+          });
+          if (tc.postconditions && tc.postconditions.length) {
+            text += 'Postconditions:\n';
+            tc.postconditions.forEach((p) => { text += `  - ${p}\n`; });
+          }
+          text += '\n';
+        });
+      } else {
+        data.test_cases.forEach((tc) => {
+          text += `${tc.title}\n`;
+          tc.steps.forEach((step) => { text += `  ${step}\n`; });
+          text += '\n';
+        });
+      }
+
+      if (data.ambiguity_notes && data.ambiguity_notes.length > 0) {
+        text += 'Ambiguity flags:\n';
+        data.ambiguity_notes.forEach((note) => { text += `- ${note}\n`; });
+      }
+
+      navigator.clipboard.writeText(text);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
