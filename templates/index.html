@@ -211,7 +211,7 @@
         if (!res.ok) throw new Error(data.error || 'Failed to fetch ticket');
         document.getElementById('requirement').value = data.requirement;
       } catch (err) {
-        errorDiv.innerHTML = `<div class="error-box">${err.message}</div>`;
+        errorDiv.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
       }
     }
 
@@ -240,7 +240,7 @@
         if (!res.ok) throw new Error(data.error || 'Generation failed');
         renderResult(data);
       } catch (err) {
-        output.innerHTML = `<div class="error-box">${err.message}</div>`;
+        output.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
       } finally {
         btn.disabled = false;
         btn.textContent = 'Generate test cases';

@@ -9,6 +9,7 @@ Then open: http://localhost:5001
 """
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,7 +22,8 @@ load_dotenv()
 
 from flask import Flask, jsonify, render_template, request
 
-from generator import TestCaseGenerator
+from generator import STYLES, TestCaseGenerator
+from limits import check_generation_allowed, client_ip, max_requirement_chars
 from jira_client import JiraClient
 
 CORPUS_DIR = Path(__file__).parent.parent / "corpus"
@@ -45,6 +47,17 @@ def log_run(requirement: str, result: dict) -> None:
         f.write(json.dumps(record) + "\n")
 
 
+@app.after_request
+def keep_out_of_search_engines(response):
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
+@app.route("/robots.txt")
+def robots():
+    return "User-agent: *\nDisallow: /\n", 200, {"Content-Type": "text/plain"}
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -52,6 +65,9 @@ def index():
 
 @app.route("/jira/<issue_key>")
 def fetch_jira_issue(issue_key):
+    # A public copy of the app must not read the owner's Jira tickets for strangers
+    if os.environ.get("DISABLE_JIRA", "").lower() == "true":
+        return jsonify({"error": "Jira lookup is turned off on this public copy of the app - paste the requirement instead"}), 403
     try:
         client = JiraClient()
         issue = client.get_issue(issue_key)
@@ -69,6 +85,14 @@ def generate():
 
     if not requirement:
         return jsonify({"error": "Requirement text is empty"}), 400
+    if style not in STYLES:
+        return jsonify({"error": f"Unknown style '{style}'. Must be one of: {list(STYLES.keys())}"}), 400
+    if max_requirement_chars() and len(requirement) > max_requirement_chars():
+        return jsonify({"error": f"The requirement is too long (the limit is {max_requirement_chars()} characters)"}), 400
+
+    blocked = check_generation_allowed(client_ip(request))
+    if blocked:
+        return jsonify({"error": blocked}), 429
 
     try:
         result = generator.generate(requirement, style=style)
@@ -80,4 +104,4 @@ def generate():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "1") == "1", port=int(os.environ.get("PORT", "5001")))
