@@ -2,59 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Test Case Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Work+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --accent: #854e5c;
+      --accent-dark: #6f3f4c;
+      --accent-tint: #f7eef1;
+      --border: #dfdadc;
+      --input-border: #d7d0d2;
+      --text: #000;
+      --muted: #6f6a6c;
+      --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+      --sans: 'Work Sans', -apple-system, system-ui, sans-serif;
+    }
     * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, system-ui, sans-serif;
+      font-family: var(--sans);
+      font-weight: 600;
       margin: 0;
-      background: #f7f5f2;
-      color: #2a2420;
+      background: #fff;
+      color: var(--text);
     }
     header {
       padding: 20px 32px;
-      background: #2a2420;
+      background: var(--accent);
       color: #fff;
     }
-    header h1 { margin: 0; font-size: 20px; }
+    header h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 26.7px;
+      font-weight: 600;
+      line-height: 1.33;
+    }
     .layout {
       display: flex;
       gap: 24px;
-      padding: 24px 32px;
+      padding: 32px;
       max-width: 1200px;
       margin: 0 auto;
     }
     .panel {
       flex: 1;
       background: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 25px 27px 27px;
     }
-    .panel h2 { margin-top: 0; font-size: 16px; color: #6b5d4f; }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text);
+    }
     .jira-row { display: flex; gap: 8px; margin-bottom: 16px; }
     input[type="text"], textarea {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 14px;
+      padding: 10px 17px;
+      border: 1px solid var(--input-border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
       font-family: inherit;
+      font-size: 14px;
+      font-weight: inherit;
     }
-    textarea { min-height: 160px; resize: vertical; }
+    textarea {
+      min-height: 160px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      resize: vertical;
+    }
+    input[type="text"]::placeholder, textarea::placeholder { color: #8a8386; }
+    input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--accent); }
     button {
       padding: 10px 16px;
-      border: none;
-      border-radius: 6px;
-      background: #b5651d;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: var(--accent);
       color: #fff;
-      font-size: 14px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: inherit;
       cursor: pointer;
     }
-    button:hover { background: #9c5518; }
-    button.secondary { background: #6b5d4f; }
+    button:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+    button.secondary { background: #fff; color: var(--text); }
+    button.secondary:hover { background: var(--accent-tint); border-color: var(--accent); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .generate-btn { width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+    .generate-btn { width: 100%; margin-top: 12px; padding: 12px; font-size: 14px; }
     .style-row { display: flex; gap: 10px; margin-top: 16px; }
     .style-option {
       flex: 1;
@@ -62,52 +104,57 @@
       align-items: flex-start;
       gap: 8px;
       padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
     }
-    .style-option:has(input:checked) { border-color: #b5651d; background: #fdf3e7; }
-    .style-option input { margin-top: 3px; }
-    .style-option strong { display: block; font-size: 13px; }
-    .style-option span { display: block; color: #777; font-size: 11px; margin-top: 2px; }
-    .step-case {
-      border: 1px solid #eee;
-      border-radius: 8px;
+    .style-option:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .style-option input { margin-top: 3px; accent-color: var(--accent); }
+    .style-option strong { display: block; font-size: 12px; font-weight: 700; }
+    .style-option span { display: block; color: var(--text); font-size: 10px; margin-top: 2px; }
+    .step-case, .test-case {
+      border: 1px solid var(--border);
+      border-radius: 14px;
       padding: 14px 16px;
       margin-bottom: 12px;
     }
-    .step-case h3 { margin: 0 0 10px; font-size: 14px; }
-    .step-case .section-label { font-size: 11px; text-transform: uppercase; color: #999; margin: 10px 0 4px; }
-    .step-case ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; }
-    .step-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
-    .step-num { font-weight: bold; color: #b5651d; min-width: 20px; }
-    .step-content .action { color: #2a2420; }
-    .step-content .expected { color: #666; font-size: 12px; margin-top: 2px; }
-    .test-case {
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
+    .step-case h3, .test-case h3 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: 17px;
+      font-weight: 700;
     }
-    .test-case h3 { margin: 0 0 8px; font-size: 14px; }
-    .test-case ul { margin: 0; padding-left: 18px; font-size: 13px; color: #444; }
+    .step-case .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 10px 0 4px;
+    }
+    .step-case ul, .test-case ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--text); }
+    .step-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+    .step-num { font-weight: 700; color: var(--accent); min-width: 20px; }
+    .step-content .action { color: var(--text); }
+    .step-content .expected { color: var(--muted); font-size: 12px; margin-top: 2px; }
     .ambiguity-box {
-      background: #fdf3e7;
-      border: 1px solid #f0dcb8;
-      border-radius: 8px;
-      padding: 12px 14px;
+      background: var(--accent-tint);
+      border: 1px solid #e6d3d8;
+      border-radius: 14px;
+      padding: 14px 16px;
       margin-top: 16px;
     }
-    .ambiguity-box h3 { margin: 0 0 8px; font-size: 14px; color: #8a5a00; }
+    .ambiguity-box h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--accent); }
     .ambiguity-box ul { margin: 0; padding-left: 18px; font-size: 13px; }
-    .meta { font-size: 12px; color: #999; margin-top: 16px; }
+    .meta { font-size: 12px; color: var(--muted); margin-top: 16px; }
     .copy-btn { margin-top: 12px; }
-    .empty-state { color: #999; font-size: 14px; text-align: center; padding: 40px 0; }
+    .empty-state { color: var(--muted); font-size: 14px; text-align: center; padding: 40px 0; }
     .error-box {
-      background: #fde8e8; border: 1px solid #f0b8b8; color: #8a0000;
-      padding: 12px; border-radius: 6px; font-size: 13px;
+      background: #fbeeee; border: 1px solid #e8c4c4; color: #8a1c1c;
+      padding: 12px 16px; border-radius: 12px; font-size: 13px;
     }
+    #fetchError:not(:empty) { margin-top: 12px; }
   </style>
 </head>
 <body>
