@@ -19,6 +19,7 @@ from pathlib import Path
 import anthropic
 
 from retriever import StyleRetriever
+from validation_summary import build_validation_summary
 
 BDD_SYSTEM_PROMPT = """You are a QA engineer generating test cases in a \
 specific team's established style. You will be shown example requirements \
@@ -142,6 +143,7 @@ class TestCaseGenerator:
                 f"Model did not return valid JSON. Raw response:\n{raw_text}"
             ) from e
 
+        parsed["validation_summary"] = build_validation_summary(parsed.get("test_cases", []), style)
         parsed["retrieved_examples"] = [ex["id"] for ex in examples]
         parsed["style"] = style
         return parsed
