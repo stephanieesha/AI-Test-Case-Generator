@@ -178,6 +178,22 @@
     #jiraStatus.jira-error { color: #8a1c1c; }
     .jira-row input:disabled { background: #f6f4f5; }
     .jira-hint { color: var(--muted); font-size: 12px; margin: -4px 0 12px; }
+    .validation-box {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .validation-box h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .validation-title { font-size: 13px; font-weight: 700; margin-top: 8px; }
+    .validation-box ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -358,6 +374,16 @@
       const output = document.getElementById('output');
       let html = '';
 
+      if (data.validation_summary && data.validation_summary.length) {
+        html += '<div class="validation-box"><h3>What to validate</h3>';
+        data.validation_summary.forEach((group) => {
+          html += `<div class="validation-title">${escapeHtml(group.title)}</div><ul>`;
+          (group.checks || []).forEach((check) => { html += `<li>${escapeHtml(check)}</li>`; });
+          html += '</ul>';
+        });
+        html += '</div>';
+      }
+
       if (data.style === 'step_by_step') {
         data.test_cases.forEach((tc) => {
           html += `<div class="step-case"><h3>${escapeHtml(tc.title)}</h3>`;
@@ -417,6 +443,15 @@
       if (!data) return;
 
       let text = '';
+
+      if (data.validation_summary && data.validation_summary.length) {
+        text += 'What to validate:\n';
+        data.validation_summary.forEach((group) => {
+          text += `${group.title}\n`;
+          (group.checks || []).forEach((check) => { text += `  - ${check}\n`; });
+        });
+        text += '\n';
+      }
 
       if (data.style === 'step_by_step') {
         data.test_cases.forEach((tc) => {
