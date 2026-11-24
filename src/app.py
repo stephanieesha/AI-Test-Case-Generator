@@ -24,7 +24,7 @@ from flask import Flask, jsonify, render_template, request
 
 from generator import STYLES, TestCaseGenerator
 from limits import check_generation_allowed, client_ip, max_requirement_chars
-from jira_client import JiraClient
+from jira_client import JiraClient, JiraError
 
 CORPUS_DIR = Path(__file__).parent.parent / "corpus"
 LOG_PATH = Path(__file__).parent.parent / "logs" / "generation_log.jsonl"
@@ -63,18 +63,63 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/jira/<issue_key>")
-def fetch_jira_issue(issue_key):
-    # A public copy of the app must not read the owner's Jira tickets for strangers
-    if os.environ.get("DISABLE_JIRA", "").lower() == "true":
-        return jsonify({"error": "Jira lookup is turned off on this public copy of the app - paste the requirement instead"}), 403
+JIRA_SWITCHED_OFF_MESSAGE = "Jira lookup is turned off on this public copy of the app - paste the requirement instead"
+
+
+def _jira_switched_off() -> bool:
+    # Kill switch for the whole Jira lookup. Off unless DISABLE_JIRA=true is set.
+    return os.environ.get("DISABLE_JIRA", "").lower() == "true"
+
+
+def _text_field(data: dict, name: str) -> str:
+    value = data.get(name)
+    return value if isinstance(value, str) else ""
+
+
+def _jira_client_from_request() -> JiraClient:
+    # The site, email and API token come from the visitor's own settings in
+    # the page. Nothing is read from environment variables, so the owner's
+    # Jira account is never used for someone else's request.
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
+    return JiraClient(
+        site=_text_field(data, "site"),
+        email=_text_field(data, "email"),
+        api_token=_text_field(data, "api_token"),
+    )
+
+
+@app.route("/jira/check", methods=["POST"])
+def check_jira_login():
+    if _jira_switched_off():
+        return jsonify({"error": JIRA_SWITCHED_OFF_MESSAGE}), 403
     try:
-        client = JiraClient()
-        issue = client.get_issue(issue_key)
-        requirement_text = f"{issue['summary']}\n\n{issue['description']}".strip()
-        return jsonify({"requirement": requirement_text, "key": issue["key"]})
-    except Exception as e:
+        name = _jira_client_from_request().check_login()
+    except JiraError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception:
+        # Keep internal details, and anything secret, out of the response.
+        app.logger.exception("Jira login check failed")
+        return jsonify({"error": "Something went wrong while contacting Jira. Try again."}), 500
+    return jsonify({"name": name})
+
+
+@app.route("/jira/<issue_key>", methods=["POST"])
+def fetch_jira_issue(issue_key):
+    if _jira_switched_off():
+        return jsonify({"error": JIRA_SWITCHED_OFF_MESSAGE}), 403
+    try:
+        issue = _jira_client_from_request().get_issue(issue_key)
+    except JiraError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        # Keep internal details, and anything secret, out of the response.
+        app.logger.exception("Jira lookup failed")
+        return jsonify({"error": "Something went wrong while contacting Jira. Try again."}), 500
+
+    requirement_text = f"{issue['summary']}\n\n{issue['description']}".strip()
+    return jsonify({"requirement": requirement_text, "key": issue["key"]})
 
 
 @app.route("/generate", methods=["POST"])

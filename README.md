@@ -78,16 +78,20 @@ cp .env.example .env
 ```bash
 python src/app.py
 ```
-Then open `http://localhost:5001`. Paste a requirement directly, or enter
-a Jira ticket key (e.g. `PROJ-123`) and click "Fetch from Jira" to pull
-its summary and description in automatically - removes the copy/paste
-step between Jira and this tool. Click "Copy as text" on the results to
-paste them into a ticket comment, test plan, or checklist while testing.
+Then open `http://localhost:5001`. Paste a requirement directly, or open
+**Jira settings** on the page, enter your Jira site name (for example
+`mysite` from `mysite.atlassian.net`), your Atlassian account email and an
+API token, then click **Check Jira**. Once Jira is connected, enter a ticket
+key (e.g. `PROJ-123`) and click "Fetch from Jira" to pull its summary and
+description in automatically - removes the copy/paste step between Jira and
+this tool. Click "Copy as text" on the results to paste them into a ticket
+comment, test plan, or checklist while testing.
 
+Create an API token at https://id.atlassian.com/manage-profile/security/api-tokens.
 This is intentionally read-only: it fetches the ticket for you, but never
-writes a comment, field, or status back to Jira. Fetching from Jira
-requires `JIRA_DOMAIN`, `JIRA_EMAIL`, and `JIRA_API_TOKEN` in `.env` (see
-`.env.example` for where to generate a token) - direct paste still works
+writes a comment, field, or status back to Jira. Your Jira settings stay in
+the browser tab. They are sent to this app only when you check Jira or fetch
+a ticket, and are never saved on the server. Direct paste still works
 without any Jira setup at all.
 
 **Command line (still available):**

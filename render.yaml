@@ -11,8 +11,6 @@ services:
         value: "3.12.7"
       - key: ANTHROPIC_API_KEY
         sync: false          # paste your key in the Render dashboard
-      - key: DISABLE_JIRA
-        value: "true"        # never let strangers read your Jira tickets
       - key: GENERATE_LIMIT_PER_HOUR
         value: "5"
       - key: DAILY_GENERATION_LIMIT

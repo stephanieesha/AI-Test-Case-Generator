@@ -155,6 +155,29 @@
       padding: 12px 16px; border-radius: 12px; font-size: 13px;
     }
     #fetchError:not(:empty) { margin-top: 12px; }
+    .jira-settings { margin: 0 0 16px; font-size: 12px; }
+    .jira-settings summary { cursor: pointer; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+    .jira-settings input[type="text"], .jira-settings input[type="password"] {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 10px 17px;
+      border: 1px solid var(--input-border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: inherit;
+    }
+    .jira-settings input:focus { outline: none; border-color: var(--accent); }
+    .jira-note { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+    .jira-note a { color: var(--accent); }
+    .jira-check-row { display: flex; align-items: center; gap: 10px; }
+    #jiraStatus { font-size: 12px; color: var(--muted); }
+    #jiraStatus.jira-ok { color: #2d6a3e; font-weight: 700; }
+    #jiraStatus.jira-error { color: #8a1c1c; }
+    .jira-row input:disabled { background: #f6f4f5; }
+    .jira-hint { color: var(--muted); font-size: 12px; margin: -4px 0 12px; }
   </style>
 </head>
 <body>
@@ -163,10 +186,22 @@
   <div class="layout">
     <div class="panel">
       <h2>Requirement</h2>
+      <details class="jira-settings" open>
+        <summary>Jira settings (needed only to fetch tickets)</summary>
+        <p class="jira-note">Your settings stay in this browser tab. They are sent to this server only when you check Jira or fetch a ticket, and are never saved on the server. <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">Create an API token</a>.</p>
+        <input type="text" id="jiraSite" placeholder="Jira site name, e.g. mysite" autocomplete="off" oninput="saveJiraSettings()" />
+        <input type="text" id="jiraEmail" placeholder="Atlassian account email" autocomplete="off" oninput="saveJiraSettings()" />
+        <input type="password" id="jiraToken" placeholder="Jira API token" autocomplete="off" oninput="saveJiraSettings()" />
+        <div class="jira-check-row">
+          <button class="secondary" id="jiraCheckBtn" onclick="checkJira()">Check Jira</button>
+          <span id="jiraStatus"></span>
+        </div>
+      </details>
       <div class="jira-row">
-        <input type="text" id="jiraKey" placeholder="Jira ticket key, e.g. PROJ-123" />
-        <button class="secondary" onclick="fetchJira()">Fetch from Jira</button>
+        <input type="text" id="jiraKey" placeholder="Jira ticket key, e.g. PROJ-123" disabled />
+        <button class="secondary" id="fetchJiraBtn" onclick="fetchJira()" disabled>Fetch from Jira</button>
       </div>
+      <div class="jira-hint" id="jiraHint">Check Jira in the settings above to unlock Fetch from Jira.</div>
       <textarea id="requirement" placeholder="Paste a requirement here, or fetch one from Jira above..."></textarea>
 
       <div class="style-row">
@@ -199,6 +234,72 @@
   </div>
 
   <script>
+    const JIRA_FIELD_IDS = ['jiraSite', 'jiraEmail', 'jiraToken'];
+
+    function jiraSettings() {
+      return {
+        site: document.getElementById('jiraSite').value.trim(),
+        email: document.getElementById('jiraEmail').value.trim(),
+        api_token: document.getElementById('jiraToken').value.trim(),
+      };
+    }
+
+    function saveJiraSettings() {
+      // Any edit means the settings must be checked again before Fetch unlocks.
+      JIRA_FIELD_IDS.forEach((id) => {
+        sessionStorage.setItem(id, document.getElementById(id).value);
+      });
+      sessionStorage.removeItem('jiraConnectedAs');
+      setJiraConnected(null);
+    }
+
+    function setJiraConnected(name) {
+      const connected = Boolean(name);
+      const status = document.getElementById('jiraStatus');
+      document.getElementById('jiraKey').disabled = !connected;
+      document.getElementById('fetchJiraBtn').disabled = !connected;
+      document.getElementById('jiraHint').hidden = connected;
+      status.textContent = connected ? `Connected as ${name}` : '';
+      status.className = connected ? 'jira-ok' : '';
+    }
+
+    function loadJiraSettings() {
+      JIRA_FIELD_IDS.forEach((id) => {
+        document.getElementById(id).value = sessionStorage.getItem(id) || '';
+      });
+      setJiraConnected(sessionStorage.getItem('jiraConnectedAs'));
+    }
+
+    async function checkJira() {
+      const btn = document.getElementById('jiraCheckBtn');
+      const status = document.getElementById('jiraStatus');
+      const sent = JSON.stringify(jiraSettings());
+
+      btn.disabled = true;
+      btn.textContent = 'Checking...';
+      setJiraConnected(null);
+
+      try {
+        const res = await fetch('/jira/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: sent,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not check Jira');
+        // The fields may have changed while the check ran, so this answer is stale.
+        if (JSON.stringify(jiraSettings()) !== sent) return;
+        sessionStorage.setItem('jiraConnectedAs', data.name);
+        setJiraConnected(data.name);
+      } catch (err) {
+        status.textContent = err.message;
+        status.className = 'jira-error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Check Jira';
+      }
+    }
+
     async function fetchJira() {
       const key = document.getElementById('jiraKey').value.trim();
       const errorDiv = document.getElementById('fetchError');
@@ -206,14 +307,20 @@
       if (!key) return;
 
       try {
-        const res = await fetch(`/jira/${encodeURIComponent(key)}`);
-        const data = await res.json();
+        const res = await fetch(`/jira/${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(jiraSettings()),
+        });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Failed to fetch ticket');
         document.getElementById('requirement').value = data.requirement;
       } catch (err) {
         errorDiv.innerHTML = `<div class="error-box">${escapeHtml(err.message)}</div>`;
       }
     }
+
+    loadJiraSettings();
 
     async function generate() {
       const requirement = document.getElementById('requirement').value.trim();

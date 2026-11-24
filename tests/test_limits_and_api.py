@@ -91,7 +91,7 @@ def test_rejected_requests_do_not_use_up_the_allowance(client, monkeypatch):
 
 def test_jira_lookup_can_be_switched_off(client, monkeypatch):
     monkeypatch.setenv("DISABLE_JIRA", "true")
-    response = client.get("/jira/KAN-1")
+    response = client.post("/jira/KAN-1", json={"site": "mysite", "email": "a@example.com", "api_token": "t"})
     assert response.status_code == 403
     assert "turned off" in response.get_json()["error"]
 
