@@ -194,6 +194,30 @@
     }
     .validation-title { font-size: 13px; font-weight: 700; margin-top: 8px; }
     .validation-box ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
+    .e2e-box { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--border); }
+    .e2e-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .e2e-note { color: var(--muted); font-size: 12px; margin: 6px 0 12px; }
+    .e2e-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .e2e-tool {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .e2e-tool:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .e2e-tool input { margin-top: 3px; accent-color: var(--accent); }
+    .e2e-tool strong { font-size: 12px; font-weight: 700; }
+    .e2e-language { color: var(--accent); font-size: 10px; margin-left: 6px; }
+    .e2e-tool-about { display: block; color: var(--text); font-size: 10px; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -245,6 +269,22 @@
       <h2>Generated output</h2>
       <div id="output">
         <div class="empty-state">Test cases will appear here.</div>
+      </div>
+
+      <div class="e2e-box">
+        <div class="e2e-title">Automate these test cases</div>
+        <p class="e2e-note">Choose the tool you will write the automated tests in.</p>
+        <div class="e2e-tools">
+          {% for tool_id, tool in e2e_tools.items() %}
+          <label class="e2e-tool">
+            <input type="radio" name="e2e_tool" value="{{ tool_id }}" />
+            <div>
+              <strong>{{ tool.name }}</strong><span class="e2e-language">{{ tool.language }}</span>
+              <span class="e2e-tool-about">{{ tool.summary }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>

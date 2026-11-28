@@ -22,6 +22,7 @@ load_dotenv()
 
 from flask import Flask, jsonify, render_template, request
 
+from e2e_tools import E2E_TOOLS
 from generator import STYLES, TestCaseGenerator
 from limits import check_generation_allowed, client_ip, max_requirement_chars
 from jira_client import JiraClient, JiraError
@@ -60,7 +61,7 @@ def robots():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", e2e_tools=E2E_TOOLS)
 
 
 JIRA_SWITCHED_OFF_MESSAGE = "Jira lookup is turned off on this public copy of the app - paste the requirement instead"
