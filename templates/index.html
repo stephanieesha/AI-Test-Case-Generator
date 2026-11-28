@@ -150,7 +150,7 @@
     .meta { font-size: 12px; color: var(--muted); margin-top: 16px; }
     .copy-btn { margin-top: 12px; }
     .empty-state { color: var(--muted); font-size: 14px; text-align: center; padding: 40px 0; }
-    .error-box {
+    .error-box, .e2e-error {
       background: #fbeeee; border: 1px solid #e8c4c4; color: #8a1c1c;
       padding: 12px 16px; border-radius: 12px; font-size: 13px;
     }
@@ -203,7 +203,7 @@
     }
     .e2e-note { color: var(--muted); font-size: 12px; margin: 6px 0 12px; }
     .e2e-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .e2e-tool {
+    .e2e-tool, .e2e-source {
       display: flex;
       align-items: flex-start;
       gap: 8px;
@@ -213,11 +213,19 @@
       cursor: pointer;
       font-size: 12px;
     }
-    .e2e-tool:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .e2e-tool input { margin-top: 3px; accent-color: var(--accent); }
-    .e2e-tool strong { font-size: 12px; font-weight: 700; }
+    .e2e-tool:has(input:checked), .e2e-source:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .e2e-tool input, .e2e-source input { margin-top: 3px; accent-color: var(--accent); }
+    .e2e-tool strong, .e2e-source strong { font-size: 12px; font-weight: 700; }
     .e2e-language { color: var(--accent); font-size: 10px; margin-left: 6px; }
     .e2e-tool-about { display: block; color: var(--text); font-size: 10px; margin-top: 2px; }
+    .e2e-label { font-size: 12px; font-weight: 700; margin: 18px 0 8px; }
+    .e2e-sources { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .e2e-repo { display: none; margin-top: 10px; }
+    .e2e-box:has(input[name="e2e_source"][value="clone"]:checked) .e2e-repo { display: block; }
+    .e2e-go { margin-top: 14px; }
+    #e2eGuide:not(:empty) { margin-top: 14px; }
+    .e2e-setup { font-size: 13px; font-weight: 700; }
+    .e2e-where { color: var(--muted); font-size: 12px; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -277,7 +285,7 @@
         <div class="e2e-tools">
           {% for tool_id, tool in e2e_tools.items() %}
           <label class="e2e-tool">
-            <input type="radio" name="e2e_tool" value="{{ tool_id }}" />
+            <input type="radio" name="e2e_tool" value="{{ tool_id }}" onchange="clearGuide()" />
             <div>
               <strong>{{ tool.name }}</strong><span class="e2e-language">{{ tool.language }}</span>
               <span class="e2e-tool-about">{{ tool.summary }}</span>
@@ -285,6 +293,28 @@
           </label>
           {% endfor %}
         </div>
+
+        <div class="e2e-label">Where will the tests live?</div>
+        <div class="e2e-sources">
+          <label class="e2e-source">
+            <input type="radio" name="e2e_source" value="new" checked onchange="clearGuide()" />
+            <div>
+              <strong>Start a new project</strong>
+              <span class="e2e-tool-about">Set the tool up in an empty folder.</span>
+            </div>
+          </label>
+          <label class="e2e-source">
+            <input type="radio" name="e2e_source" value="clone" onchange="clearGuide()" />
+            <div>
+              <strong>Use a project from GitHub</strong>
+              <span class="e2e-tool-about">Clone a repository you already have.</span>
+            </div>
+          </label>
+        </div>
+        <input type="text" class="e2e-repo" id="e2eRepoUrl" placeholder="https://github.com/owner/repo" autocomplete="off" oninput="clearGuide()" />
+
+        <button class="secondary e2e-go" id="e2eGo" onclick="loadGuide()">Show the steps</button>
+        <div id="e2eGuide"></div>
       </div>
     </div>
   </div>
@@ -527,6 +557,59 @@
       }
 
       navigator.clipboard.writeText(text);
+    }
+
+    function e2eChoice() {
+      const tool = document.querySelector('input[name="e2e_tool"]:checked');
+      const source = document.querySelector('input[name="e2e_source"]:checked');
+      const clone = Boolean(source) && source.value === 'clone';
+      return {
+        tool: tool ? tool.value : '',
+        source: source ? source.value : '',
+        repo_url: clone ? document.getElementById('e2eRepoUrl').value.trim() : '',
+      };
+    }
+
+    function clearGuide() {
+      document.getElementById('e2eGuide').innerHTML = '';
+    }
+
+    async function loadGuide() {
+      const box = document.getElementById('e2eGuide');
+      const btn = document.getElementById('e2eGo');
+      const sent = JSON.stringify(e2eChoice());
+
+      btn.disabled = true;
+      box.innerHTML = '';
+
+      try {
+        const res = await fetch('/e2e/guide', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: sent,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not build the steps');
+        // The choices may have changed while the request ran, so this answer is stale.
+        if (JSON.stringify(e2eChoice()) !== sent) return;
+        renderGuide(data);
+      } catch (err) {
+        if (JSON.stringify(e2eChoice()) !== sent) return;
+        box.innerHTML = `<div class="e2e-error">${escapeHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderGuide(data) {
+      const source = data.source;
+      let html = `<div class="e2e-setup">${escapeHtml(data.tool.name)}<span class="e2e-language">${escapeHtml(data.tool.language)}</span></div>`;
+      if (source.type === 'clone') {
+        html += `<div class="e2e-where">Clone ${escapeHtml(source.owner)}/${escapeHtml(source.repo)} from GitHub</div>`;
+      } else {
+        html += `<div class="e2e-where">New project in a folder called ${escapeHtml(source.folder)}</div>`;
+      }
+      document.getElementById('e2eGuide').innerHTML = html;
     }
 
     function escapeHtml(str) {

@@ -22,6 +22,7 @@ load_dotenv()
 
 from flask import Flask, jsonify, render_template, request
 
+from e2e_guide import GuideError, build_guide
 from e2e_tools import E2E_TOOLS
 from generator import STYLES, TestCaseGenerator
 from limits import check_generation_allowed, client_ip, max_requirement_chars
@@ -147,6 +148,18 @@ def generate():
 
     log_run(requirement, result)
     return jsonify(result)
+
+
+@app.route("/e2e/guide", methods=["POST"])
+def get_e2e_guide():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        data = {}
+    try:
+        guide = build_guide(_text_field(data, "tool"), _text_field(data, "source"), _text_field(data, "repo_url"))
+    except GuideError as e:
+        return jsonify({"error": str(e)}), 400
+    return jsonify(guide)
 
 
 if __name__ == "__main__":
