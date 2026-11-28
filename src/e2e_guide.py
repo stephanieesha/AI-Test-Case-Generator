@@ -8,6 +8,7 @@ model or reaches out to GitHub.
 
 from e2e_deploy import deploy_steps
 from e2e_install import install_steps
+from e2e_structure import folder_structure
 from e2e_tools import E2E_TOOLS
 from github_source import SourceError, parse_github_repo
 
@@ -25,6 +26,7 @@ def build_guide(tool_id, source_type, repo_url=""):
         "tool": tool,
         "source": source,
         "install_steps": install_steps(tool_id, source),
+        "folder_structure": folder_structure(tool_id, source),
         "deploy_steps": deploy_steps(tool_id, source),
     }
 

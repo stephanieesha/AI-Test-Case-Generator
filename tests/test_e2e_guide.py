@@ -89,6 +89,10 @@ def test_the_tool_is_checked_before_the_source():
     assert str(error.value) == "Choose the tool you will write the automated tests in."
 
 
+def test_the_guide_has_one_part_for_each_thing_the_page_shows_in_the_order_it_shows_them():
+    assert list(build_guide("playwright", "new")) == ["tool", "source", "install_steps", "folder_structure", "deploy_steps"]
+
+
 def test_the_endpoint_returns_the_guide_for_a_new_project(client):
     response = post(client, tool="selenium", source="new")
     assert response.status_code == 200

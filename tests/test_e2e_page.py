@@ -21,6 +21,10 @@ CLASSES_USED_BY_THE_CYPRESS_SUITE = {
     "step-row", "step-num", "section-label", "ambiguity-box", "meta", "copy-btn", "action", "expected",
 }
 
+PLAYWRIGHT_STRUCTURE = {
+    "tree": "my-e2e-tests/\n├── playwright.config.ts\n└── tests/\n    └── login.spec.ts",
+    "notes": ["tests/ holds the tests.", "login is only an example."],
+}
 PLAYWRIGHT_NEW = {
     "tool": {"id": "playwright", "name": "Playwright", "language": "TypeScript"},
     "source": {"type": "new", "folder": "my-e2e-tests"},
@@ -28,6 +32,7 @@ PLAYWRIGHT_NEW = {
         {"title": "Check Node.js", "detail": "Use a current LTS version.", "commands": ["node --version"]},
         {"title": "Create the project folder", "commands": ["mkdir my-e2e-tests", "cd my-e2e-tests"]},
     ],
+    "folder_structure": PLAYWRIGHT_STRUCTURE,
     "deploy_steps": [
         {"title": "Create an empty repository on GitHub", "detail": "Leave it empty."},
         {
@@ -64,6 +69,10 @@ HOSTILE_CLONE = {
     "install_steps": [
         {"title": "<b>Step</b>", "detail": "<i>Detail</i> & more", "commands": ["echo <u>one</u>", "a && b"]},
     ],
+    "folder_structure": {
+        "tree": "<b>tree</b> & more\n└── <i>file</i>",
+        "notes": ["<u>note</u> & more", "<s>second</s>"],
+    },
     "deploy_steps": [
         {"title": "<b>Deploy</b>", "file": {"path": "<i>path</i>", "content": "a <u>b</u> & c"}},
     ],
@@ -71,6 +80,16 @@ HOSTILE_CLONE = {
 HOSTILE_NEW = {
     "tool": {"id": "x", "name": "Tool", "language": "Language"},
     "source": {"type": "new", "folder": "<em>folder</em>"},
+}
+TREE_ONLY = {
+    "tool": {"id": "x", "name": "Tool", "language": "Language"},
+    "source": {"type": "new", "folder": "f"},
+    "folder_structure": {"tree": "x/\n└── y", "notes": []},
+}
+NOTES_ONLY = {
+    "tool": {"id": "x", "name": "Tool", "language": "Language"},
+    "source": {"type": "new", "folder": "f"},
+    "folder_structure": {"tree": "", "notes": ["a lonely note"]},
 }
 
 # What the server answers to each request the script makes below, in order.
@@ -86,6 +105,8 @@ REPLIES = [
     {"status": 500, "body": {}},
     {"status": 200, "body": HOSTILE_CLONE},
     {"status": 200, "body": HOSTILE_NEW},
+    {"status": 200, "body": TREE_ONLY},
+    {"status": 200, "body": NOTES_ONLY},
 ]
 
 NODE_RUNNER = r"""
@@ -199,6 +220,12 @@ const out = {};
   picked.e2e_source = 'new';
   await sandbox.loadGuide();
   out.hostileNew = guide();
+
+  await sandbox.loadGuide();
+  out.treeOnly = guide();
+
+  await sandbox.loadGuide();
+  out.notesOnly = guide();
 
   console.log(JSON.stringify({ ...out, sent }));
 })().catch((err) => { console.error(err); process.exit(1); });
@@ -317,7 +344,7 @@ def test_a_failed_request_shows_why_and_a_reply_with_no_message_gets_a_plain_one
 
 
 def test_what_the_box_draws_never_reuses_a_class_the_cypress_suite_looks_for(run):
-    drawn = [run[key] for key in ("noTool", "newProject", "clone", "escapedError", "offline", "noMessage", "hostileClone")]
+    drawn = [run[key] for key in ("noTool", "newProject", "clone", "escapedError", "offline", "noMessage", "hostileClone", "treeOnly")]
     classes = {name for html in drawn for value in re.findall(r'class="([^"]*)"', html) for name in value.split()}
     assert classes
     assert not classes & CLASSES_USED_BY_THE_CYPRESS_SUITE
@@ -326,7 +353,7 @@ def test_what_the_box_draws_never_reuses_a_class_the_cypress_suite_looks_for(run
 
 def test_the_install_steps_show_as_a_numbered_list_with_each_set_of_commands_in_a_box(run):
     shown = run["newProject"]
-    install = shown[shown.index(">Install<"):shown.index(">Deploy<")]
+    install = shown[shown.index(">Install<"):shown.index(">Folder structure<")]
     assert '<div class="e2e-heading">Install</div><ol class="e2e-steps">' in shown
     assert install.count("<li>") == 2
     assert (
@@ -402,6 +429,55 @@ def test_the_deploy_steps_are_escaped_including_the_file_path_and_content(run):
 
 def test_there_is_no_deploy_heading_when_the_answer_has_no_deploy_steps(run):
     assert "Deploy" not in run["hostileNew"]
+
+
+def test_the_folder_structure_sits_between_the_install_steps_and_the_deploy_steps(run):
+    shown = run["newProject"]
+    assert shown.count('<div class="e2e-heading">') == 3
+    assert shown.index(">Install<") < shown.index(">Folder structure<") < shown.index(">Deploy<")
+
+
+def test_the_tree_shows_in_a_box_that_keeps_its_lines_and_the_notes_follow_as_a_list(run):
+    assert (
+        '<div class="e2e-heading">Folder structure</div>'
+        '<pre class="e2e-commands e2e-tree">my-e2e-tests/\n├── playwright.config.ts\n└── tests/\n    └── login.spec.ts</pre>'
+        '<ul class="e2e-notes"><li>tests/ holds the tests.</li><li>login is only an example.</li></ul>'
+    ) in run["newProject"]
+
+
+def test_the_tree_and_the_notes_are_escaped_before_they_are_shown(run):
+    shown = run["hostileClone"]
+    assert '<pre class="e2e-commands e2e-tree">&lt;b&gt;tree&lt;/b&gt; &amp; more\n└── &lt;i&gt;file&lt;/i&gt;</pre>' in shown
+    assert "<li>&lt;u&gt;note&lt;/u&gt; &amp; more</li><li>&lt;s&gt;second&lt;/s&gt;</li>" in shown
+    assert not re.search(r"<(?:b|i|u|s)>", shown)
+
+
+def test_a_tree_with_no_notes_has_no_list(run):
+    assert run["treeOnly"] == (
+        '<div class="e2e-setup">Tool<span class="e2e-language">Language</span></div>'
+        '<div class="e2e-where">New project in a folder called f</div>'
+        '<div class="e2e-heading">Folder structure</div>'
+        '<pre class="e2e-commands e2e-tree">x/\n└── y</pre>'
+    )
+
+
+def test_notes_with_no_tree_are_not_shown_and_neither_is_the_heading(run):
+    assert "Folder structure" not in run["notesOnly"]
+    assert "lonely" not in run["notesOnly"]
+    assert "<ul" not in run["notesOnly"]
+
+
+def test_there_is_no_folder_structure_heading_when_the_answer_has_none(run):
+    assert "Folder structure" not in run["hostileNew"]
+
+
+def test_every_class_the_script_draws_has_a_style_rule():
+    style = PAGE_HTML[PAGE_HTML.index("<style>"):PAGE_HTML.index("</style>")]
+    script = PAGE_HTML[PAGE_HTML.index("<script>"):]
+    drawn = {name for value in re.findall(r'class="(e2e-[^"]*)"', script) for name in value.split()}
+    styled = set(re.findall(r"\.(e2e-[a-z-]+)\s*[{,]", style))
+    assert {"e2e-tree", "e2e-notes"} <= drawn
+    assert drawn <= styled
 
 
 def test_the_markup_of_the_box_never_reuses_a_class_the_cypress_suite_looks_for():

@@ -257,6 +257,9 @@
       font-weight: 700;
     }
     .e2e-file + .e2e-commands { margin-top: 2px; }
+    .e2e-tree { line-height: 1.2; }
+    .e2e-notes { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
+    .e2e-notes li { margin-bottom: 6px; padding-left: 4px; }
   </style>
 </head>
 <body>
@@ -643,6 +646,9 @@
       if (data.install_steps && data.install_steps.length) {
         html += '<div class="e2e-heading">Install</div>' + renderSteps(data.install_steps);
       }
+      if (data.folder_structure && data.folder_structure.tree) {
+        html += '<div class="e2e-heading">Folder structure</div>' + renderStructure(data.folder_structure);
+      }
       if (data.deploy_steps && data.deploy_steps.length) {
         html += '<div class="e2e-heading">Deploy</div>' + renderSteps(data.deploy_steps);
       }
@@ -664,6 +670,16 @@
         html += '</li>';
       });
       return html + '</ol>';
+    }
+
+    function renderStructure(structure) {
+      let html = `<pre class="e2e-commands e2e-tree">${escapeHtml(structure.tree)}</pre>`;
+      if (structure.notes && structure.notes.length) {
+        html += '<ul class="e2e-notes">';
+        structure.notes.forEach((note) => { html += `<li>${escapeHtml(note)}</li>`; });
+        html += '</ul>';
+      }
+      return html;
     }
 
     function escapeHtml(str) {
