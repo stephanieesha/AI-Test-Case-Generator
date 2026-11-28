@@ -28,6 +28,15 @@ PLAYWRIGHT_NEW = {
         {"title": "Check Node.js", "detail": "Use a current LTS version.", "commands": ["node --version"]},
         {"title": "Create the project folder", "commands": ["mkdir my-e2e-tests", "cd my-e2e-tests"]},
     ],
+    "deploy_steps": [
+        {"title": "Create an empty repository on GitHub", "detail": "Leave it empty."},
+        {
+            "title": "Add the workflow file",
+            "detail": "Create the folders first.",
+            "file": {"path": ".github/workflows/playwright.yml", "content": "name: Playwright tests\n\non:\n  push:\n"},
+        },
+        {"title": "Commit and push", "commands": ["git init", "git push -u origin main"]},
+    ],
 }
 CYPRESS_CLONE = {
     "tool": {"id": "cypress", "name": "Cypress", "language": "JavaScript"},
@@ -54,6 +63,9 @@ HOSTILE_CLONE = {
     "source": {"type": "clone", "owner": "<u>owner</u>", "repo": "<s>repo</s>", "url": "u", "folder": "<s>repo</s>"},
     "install_steps": [
         {"title": "<b>Step</b>", "detail": "<i>Detail</i> & more", "commands": ["echo <u>one</u>", "a && b"]},
+    ],
+    "deploy_steps": [
+        {"title": "<b>Deploy</b>", "file": {"path": "<i>path</i>", "content": "a <u>b</u> & c"}},
     ],
 }
 HOSTILE_NEW = {
@@ -314,14 +326,14 @@ def test_what_the_box_draws_never_reuses_a_class_the_cypress_suite_looks_for(run
 
 def test_the_install_steps_show_as_a_numbered_list_with_each_set_of_commands_in_a_box(run):
     shown = run["newProject"]
+    install = shown[shown.index(">Install<"):shown.index(">Deploy<")]
     assert '<div class="e2e-heading">Install</div><ol class="e2e-steps">' in shown
-    assert shown.count("<li>") == 2
+    assert install.count("<li>") == 2
     assert (
         '<li><div class="e2e-step-title">Check Node.js</div>'
         '<div class="e2e-step-detail">Use a current LTS version.</div>'
         '<pre class="e2e-commands">node --version</pre></li>'
-    ) in shown
-    assert shown.endswith("</ol>")
+    ) in install
 
 
 def test_a_step_with_no_detail_has_no_empty_detail_line_and_keeps_one_command_per_line(run):
@@ -349,6 +361,47 @@ def test_the_steps_are_escaped_before_they_are_shown(run):
 def test_there_is_no_install_heading_when_the_answer_has_no_steps(run):
     assert "e2e-heading" not in run["hostileNew"]
     assert "<ol" not in run["hostileNew"]
+
+
+def test_the_deploy_steps_follow_the_install_steps_under_their_own_heading(run):
+    shown = run["newProject"]
+    assert '<div class="e2e-heading">Deploy</div><ol class="e2e-steps">' in shown
+    assert shown.index(">Install<") < shown.index(">Deploy<")
+    assert shown.count("<ol") == 2
+    assert shown.endswith("</ol>")
+
+
+def test_a_file_in_a_step_shows_its_path_above_its_content(run):
+    assert (
+        '<div class="e2e-file">.github/workflows/playwright.yml</div>'
+        '<pre class="e2e-commands">name: Playwright tests\n\non:\n  push:\n</pre>'
+    ) in run["newProject"]
+
+
+def test_a_step_with_only_a_title_and_a_detail_has_no_box(run):
+    assert (
+        '<li><div class="e2e-step-title">Create an empty repository on GitHub</div>'
+        '<div class="e2e-step-detail">Leave it empty.</div></li>'
+    ) in run["newProject"]
+
+
+def test_a_deploy_step_can_hold_commands_after_its_detail(run):
+    assert (
+        '<li><div class="e2e-step-title">Commit and push</div>'
+        '<pre class="e2e-commands">git init\ngit push -u origin main</pre></li>'
+    ) in run["newProject"]
+
+
+def test_the_deploy_steps_are_escaped_including_the_file_path_and_content(run):
+    shown = run["hostileClone"]
+    assert "&lt;b&gt;Deploy&lt;/b&gt;" in shown
+    assert '<div class="e2e-file">&lt;i&gt;path&lt;/i&gt;</div>' in shown
+    assert '<pre class="e2e-commands">a &lt;u&gt;b&lt;/u&gt; &amp; c</pre>' in shown
+    assert not re.search(r"<(?:b|i|u|s)>", shown)
+
+
+def test_there_is_no_deploy_heading_when_the_answer_has_no_deploy_steps(run):
+    assert "Deploy" not in run["hostileNew"]
 
 
 def test_the_markup_of_the_box_never_reuses_a_class_the_cypress_suite_looks_for():

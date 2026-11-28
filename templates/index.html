@@ -249,6 +249,14 @@
       font-weight: 500;
       overflow-x: auto;
     }
+    .e2e-file {
+      margin-top: 6px;
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .e2e-file + .e2e-commands { margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -635,6 +643,9 @@
       if (data.install_steps && data.install_steps.length) {
         html += '<div class="e2e-heading">Install</div>' + renderSteps(data.install_steps);
       }
+      if (data.deploy_steps && data.deploy_steps.length) {
+        html += '<div class="e2e-heading">Deploy</div>' + renderSteps(data.deploy_steps);
+      }
       document.getElementById('e2eGuide').innerHTML = html;
     }
 
@@ -645,6 +656,10 @@
         if (step.detail) html += `<div class="e2e-step-detail">${escapeHtml(step.detail)}</div>`;
         if (step.commands && step.commands.length) {
           html += `<pre class="e2e-commands">${step.commands.map((command) => escapeHtml(command)).join('\n')}</pre>`;
+        }
+        if (step.file) {
+          html += `<div class="e2e-file">${escapeHtml(step.file.path)}</div>`;
+          html += `<pre class="e2e-commands">${escapeHtml(step.file.content)}</pre>`;
         }
         html += '</li>';
       });
