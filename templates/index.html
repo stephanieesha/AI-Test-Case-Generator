@@ -226,6 +226,29 @@
     #e2eGuide:not(:empty) { margin-top: 14px; }
     .e2e-setup { font-size: 13px; font-weight: 700; }
     .e2e-where { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .e2e-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 18px 0 8px;
+    }
+    .e2e-steps { margin: 0; padding-left: 20px; font-size: 13px; }
+    .e2e-steps li { margin-bottom: 12px; padding-left: 4px; }
+    .e2e-step-title { font-weight: 700; }
+    .e2e-step-detail { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .e2e-commands {
+      margin: 6px 0 0;
+      padding: 8px 12px;
+      background: var(--accent-tint);
+      border: 1px solid #e6d3d8;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 500;
+      overflow-x: auto;
+    }
   </style>
 </head>
 <body>
@@ -609,7 +632,23 @@
       } else {
         html += `<div class="e2e-where">New project in a folder called ${escapeHtml(source.folder)}</div>`;
       }
+      if (data.install_steps && data.install_steps.length) {
+        html += '<div class="e2e-heading">Install</div>' + renderSteps(data.install_steps);
+      }
       document.getElementById('e2eGuide').innerHTML = html;
+    }
+
+    function renderSteps(steps) {
+      let html = '<ol class="e2e-steps">';
+      steps.forEach((step) => {
+        html += `<li><div class="e2e-step-title">${escapeHtml(step.title)}</div>`;
+        if (step.detail) html += `<div class="e2e-step-detail">${escapeHtml(step.detail)}</div>`;
+        if (step.commands && step.commands.length) {
+          html += `<pre class="e2e-commands">${step.commands.map((command) => escapeHtml(command)).join('\n')}</pre>`;
+        }
+        html += '</li>';
+      });
+      return html + '</ol>';
     }
 
     function escapeHtml(str) {

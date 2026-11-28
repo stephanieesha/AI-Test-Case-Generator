@@ -24,6 +24,10 @@ CLASSES_USED_BY_THE_CYPRESS_SUITE = {
 PLAYWRIGHT_NEW = {
     "tool": {"id": "playwright", "name": "Playwright", "language": "TypeScript"},
     "source": {"type": "new", "folder": "my-e2e-tests"},
+    "install_steps": [
+        {"title": "Check Node.js", "detail": "Use a current LTS version.", "commands": ["node --version"]},
+        {"title": "Create the project folder", "commands": ["mkdir my-e2e-tests", "cd my-e2e-tests"]},
+    ],
 }
 CYPRESS_CLONE = {
     "tool": {"id": "cypress", "name": "Cypress", "language": "JavaScript"},
@@ -34,11 +38,23 @@ CYPRESS_CLONE = {
         "url": "https://github.com/stephanieesha/AI-Test-Case-Generator-e2e-test.git",
         "folder": "AI-Test-Case-Generator-e2e-test",
     },
+    "install_steps": [
+        {
+            "title": "Clone the repository",
+            "commands": [
+                "git clone https://github.com/stephanieesha/AI-Test-Case-Generator-e2e-test.git",
+                "cd AI-Test-Case-Generator-e2e-test",
+            ],
+        },
+    ],
 }
 
 HOSTILE_CLONE = {
     "tool": {"id": "x", "name": "<b>Tool</b>", "language": "<i>Language</i>"},
     "source": {"type": "clone", "owner": "<u>owner</u>", "repo": "<s>repo</s>", "url": "u", "folder": "<s>repo</s>"},
+    "install_steps": [
+        {"title": "<b>Step</b>", "detail": "<i>Detail</i> & more", "commands": ["echo <u>one</u>", "a && b"]},
+    ],
 }
 HOSTILE_NEW = {
     "tool": {"id": "x", "name": "Tool", "language": "Language"},
@@ -294,6 +310,45 @@ def test_what_the_box_draws_never_reuses_a_class_the_cypress_suite_looks_for(run
     assert classes
     assert not classes & CLASSES_USED_BY_THE_CYPRESS_SUITE
     assert not any("<h2" in html or "<h3" in html for html in drawn)
+
+
+def test_the_install_steps_show_as_a_numbered_list_with_each_set_of_commands_in_a_box(run):
+    shown = run["newProject"]
+    assert '<div class="e2e-heading">Install</div><ol class="e2e-steps">' in shown
+    assert shown.count("<li>") == 2
+    assert (
+        '<li><div class="e2e-step-title">Check Node.js</div>'
+        '<div class="e2e-step-detail">Use a current LTS version.</div>'
+        '<pre class="e2e-commands">node --version</pre></li>'
+    ) in shown
+    assert shown.endswith("</ol>")
+
+
+def test_a_step_with_no_detail_has_no_empty_detail_line_and_keeps_one_command_per_line(run):
+    assert (
+        '<li><div class="e2e-step-title">Create the project folder</div>'
+        '<pre class="e2e-commands">mkdir my-e2e-tests\ncd my-e2e-tests</pre></li>'
+    ) in run["newProject"]
+
+
+def test_a_cloned_project_starts_with_the_clone_command(run):
+    assert (
+        '<pre class="e2e-commands">git clone https://github.com/stephanieesha/AI-Test-Case-Generator-e2e-test.git'
+        "\ncd AI-Test-Case-Generator-e2e-test</pre>"
+    ) in run["clone"]
+
+
+def test_the_steps_are_escaped_before_they_are_shown(run):
+    shown = run["hostileClone"]
+    assert "&lt;b&gt;Step&lt;/b&gt;" in shown
+    assert "&lt;i&gt;Detail&lt;/i&gt; &amp; more" in shown
+    assert "echo &lt;u&gt;one&lt;/u&gt;\na &amp;&amp; b" in shown
+    assert not re.search(r"<(?:b|i|u|s)>", shown)
+
+
+def test_there_is_no_install_heading_when_the_answer_has_no_steps(run):
+    assert "e2e-heading" not in run["hostileNew"]
+    assert "<ol" not in run["hostileNew"]
 
 
 def test_the_markup_of_the_box_never_reuses_a_class_the_cypress_suite_looks_for():
